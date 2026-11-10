@@ -4,32 +4,25 @@ Tests Pydantic schema validation, anti-spoofing rejection logic,
 fallback resilience, and 6-language advisory synthesis.
 """
 
-import pytest
-from PIL import Image
 import io
 
-from app.models.forensic import (
-    PollutionSourceEnum,
-    PriorityLevelEnum,
-    RecommendedULBAction,
-    ForensicAuditResult,
-    VernacularAdvisories
-)
 from app.core.prompts import (
-    GEMINI_FORENSIC_SYSTEM_PROMPT,
-    VERNACULAR_TRANSLATION_SYSTEM_PROMPT,
     build_audit_prompt_with_context,
-    build_vernacular_prompt
 )
 from app.data.sample_audit_payloads import (
     SAMPLE_AUDIT_PAYLOADS,
     SPOOFING_REJECTION_FIXTURES,
-    get_sample_by_archetype,
-    get_sample_by_city,
-    list_available_archetypes
+    list_available_archetypes,
+)
+from app.models.forensic import (
+    ForensicAuditResult,
+    PollutionSourceEnum,
+    PriorityLevelEnum,
+    VernacularAdvisories,
 )
 from app.services.gemini_forensic import GeminiForensicService
 from app.services.vernacular_service import VernacularService
+from PIL import Image
 
 
 def test_pollution_archetypes_count():
@@ -80,10 +73,7 @@ def test_anti_spoofing_fixtures_pydantic_validity():
 def test_audit_prompt_generation():
     """Verify context prompt construction with geo-coordinates."""
     prompt = build_audit_prompt_with_context(
-        latitude=28.6139,
-        longitude=77.2090,
-        city_hint="Delhi-NCR",
-        reported_by="CITIZEN_MOBILE_APP"
+        latitude=28.6139, longitude=77.2090, city_hint="Delhi-NCR", reported_by="CITIZEN_MOBILE_APP"
     )
     assert "Delhi-NCR" in prompt
     assert "28.613900" in prompt
@@ -101,18 +91,13 @@ def test_gemini_service_resilient_fallback():
     img.save(img_byte_arr, format="JPEG")
     image_bytes = img_byte_arr.getvalue()
 
-    result = service.audit_image(
-        image_data=image_bytes,
-        city_hint="delhi_ncr",
-        latitude=28.6253,
-        longitude=77.3298
-    )
+    result = service.audit_image(image_data=image_bytes, city_hint="delhi_ncr", latitude=28.6253, longitude=77.3298)
 
     assert isinstance(result, ForensicAuditResult)
     assert result.is_valid_environmental_hazard is True
     assert result.source_classification in (
         PollutionSourceEnum.OPEN_MUNICIPAL_WASTE_BURNING,
-        PollutionSourceEnum.CONSTRUCTION_DEMOLITION_DUST
+        PollutionSourceEnum.CONSTRUCTION_DEMOLITION_DUST,
     )
     assert result.severity_score > 0.0
     assert result.estimated_plume_spread_radius_meters > 0
@@ -122,9 +107,7 @@ def test_vernacular_service_translation_fallback():
     """Verify fallback vernacular advisory output across all 6 languages."""
     service = VernacularService(api_key=None)
     advisories = service.generate_advisories(
-        source_classification="CONSTRUCTION_DEMOLITION_DUST",
-        severity_score=0.75,
-        city_name="Bengaluru"
+        source_classification="CONSTRUCTION_DEMOLITION_DUST", severity_score=0.75, city_name="Bengaluru"
     )
 
     assert isinstance(advisories, VernacularAdvisories)
@@ -140,8 +123,7 @@ def test_vernacular_speech_synthesis_fallback():
     """Verify fallback speech response handles missing credentials gracefully."""
     service = VernacularService(api_key=None)
     speech = service.synthesize_speech(
-        text="Heavy dust alert nearby. Please wear protective masks.",
-        language_code="hi"
+        text="Heavy dust alert nearby. Please wear protective masks.", language_code="hi"
     )
 
     assert speech.language_code == "hi"

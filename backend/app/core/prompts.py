@@ -123,10 +123,7 @@ DO NOT include markdown backticks or explanations.
 
 
 def build_audit_prompt_with_context(
-    latitude: float = None,
-    longitude: float = None,
-    city_hint: str = None,
-    reported_by: str = None
+    latitude: float = None, longitude: float = None, city_hint: str = None, reported_by: str = None
 ) -> str:
     """
     Constructs contextual metadata to accompany the image during forensic audit.
@@ -148,10 +145,7 @@ def build_audit_prompt_with_context(
 
 
 def build_vernacular_prompt(
-    source_classification: str,
-    severity_score: float,
-    city_name: str = "your area",
-    detected_markers: list = None
+    source_classification: str, severity_score: float, city_name: str = "your area", detected_markers: list = None
 ) -> str:
     """
     Constructs the prompt for multi-language citizen advisory synthesis.

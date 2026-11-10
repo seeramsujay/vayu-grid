@@ -4,13 +4,11 @@ Provides routes for synthesizing multi-language citizen advisories and audio str
 """
 
 from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.models.forensic import (
-    VernacularAdvisories,
-    VernacularAudioResponse
-)
+from app.models.forensic import VernacularAdvisories, VernacularAudioResponse
 from app.services.vernacular_service import vernacular_service
 
 router = APIRouter(prefix="/vernacular", tags=["Vernacular Intelligence"])
@@ -24,7 +22,9 @@ class AdvisorySynthesisRequest(BaseModel):
 
 
 class SpeechAudioRequest(BaseModel):
-    text: str = Field(..., json_schema_extra={"example": "Dense toxic smoke detected nearby. Vulnerable groups should stay indoors."})
+    text: str = Field(
+        ..., json_schema_extra={"example": "Dense toxic smoke detected nearby. Vulnerable groups should stay indoors."}
+    )
     language_code: str = Field(..., json_schema_extra={"example": "hi"})
 
 
@@ -39,7 +39,7 @@ async def synthesize_vernacular_advisories(payload: AdvisorySynthesisRequest):
             source_classification=payload.source_classification,
             severity_score=payload.severity_score,
             city_name=payload.city_name,
-            detected_markers=payload.detected_markers
+            detected_markers=payload.detected_markers,
         )
         return advisories
     except Exception as exc:
@@ -53,10 +53,7 @@ async def synthesize_speech_audio(payload: SpeechAudioRequest):
     Returns Base64 MP3 stream or Web Speech fallback directive.
     """
     try:
-        audio_response = vernacular_service.synthesize_speech(
-            text=payload.text,
-            language_code=payload.language_code
-        )
+        audio_response = vernacular_service.synthesize_speech(text=payload.text, language_code=payload.language_code)
         return audio_response
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Speech synthesis error: {str(exc)}")
