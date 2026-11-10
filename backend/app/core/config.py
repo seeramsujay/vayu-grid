@@ -4,6 +4,7 @@ Handles API credentials, Gemini model parameters, and service configuration.
 """
 
 from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

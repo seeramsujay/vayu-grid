@@ -5,17 +5,18 @@ robust offline regional fallback, solar insolation stability classification,
 and friction velocity estimation.
 """
 
-import math
 import logging
-from typing import Optional, Dict, List
+import math
+from typing import Dict, List, Optional
+
 import httpx
 
 from app.core.config import settings
 from app.models.weather import (
-    WeatherTelemetry,
+    CityMetadata,
     StabilityClass,
     TerrainCategory,
-    CityMetadata,
+    WeatherTelemetry,
 )
 
 logger = logging.getLogger("vayugrid.weather")

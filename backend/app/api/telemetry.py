@@ -4,11 +4,12 @@ Exposes endpoints for live and archetype weather telemetry and city configuratio
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Query, HTTPException
 
-from app.models.weather import WeatherTelemetry, CityMetadata
+from fastapi import APIRouter, HTTPException, Query
+
+from app.models.weather import CityMetadata, WeatherTelemetry
+from app.services.aqi_service import StationTelemetry, aqi_service
 from app.services.weather_service import WeatherService
-from app.services.aqi_service import aqi_service, StationTelemetry
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetry & Micrometeorology"])
 weather_service = WeatherService()
@@ -24,9 +25,7 @@ async def get_weather_telemetry(
     longitude: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
     lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Latitude alias"),
     lon: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Longitude alias"),
-    city_id: Optional[str] = Query(
-        None, description="Optional city archetype slug (e.g., 'delhi_ncr')"
-    ),
+    city_id: Optional[str] = Query(None, description="Optional city archetype slug (e.g., 'delhi_ncr')"),
 ):
     actual_lat = latitude if latitude is not None else (lat if lat is not None else 28.6139)
     actual_lon = longitude if longitude is not None else (lon if lon is not None else 77.2090)
@@ -43,9 +42,7 @@ async def get_weather_telemetry(
         )
         return telemetry
     except Exception as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve weather telemetry: {str(exc)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve weather telemetry: {str(exc)}")
 
 
 @router.get(
@@ -79,4 +76,3 @@ async def get_ambient_aqi(
         return await aqi_service.get_city_stations(city_id=city_id)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve AQI telemetry: {str(exc)}")
-

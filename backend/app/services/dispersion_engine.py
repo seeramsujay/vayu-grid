@@ -13,23 +13,24 @@ import math
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import List, Dict, Tuple, Optional, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
-from app.models.weather import WeatherTelemetry, StabilityClass, TerrainCategory
 from app.models.dispersion import (
-    EmissionSourceType,
-    HazardLevel,
-    GeoPoint,
-    PlumeDynamics,
-    IsoplethContour,
-    PuffSnapshot,
-    TimeSeriesSnapshot,
-    ImpactedReceptor,
-    DownwindExposureCone,
-    SimulationParameters,
     DispersionSimulationResult,
+    DownwindExposureCone,
+    EmissionSourceType,
+    GeoPoint,
+    HazardLevel,
+    ImpactedReceptor,
+    IsoplethContour,
+    PlumeDynamics,
+    PuffSnapshot,
+    SimulationParameters,
+    TimeSeriesSnapshot,
 )
+from app.models.weather import StabilityClass, TerrainCategory, WeatherTelemetry
 
 # Statutory Air Quality Thresholds (µg/m³) for PM2.5 / toxic particulate plumes
 STATUTORY_THRESHOLDS: Dict[HazardLevel, float] = {
@@ -179,9 +180,7 @@ class DispersionEngine:
         else:
             # Open combustion thermal convective heat rate (MW)
             fire_area = math.pi * (radius**2)
-            heat_release_rate_mw = (
-                0.015 * fire_area * severity_score * (delta_t / 100.0)
-            )
+            heat_release_rate_mw = 0.015 * fire_area * severity_score * (delta_t / 100.0)
             heat_release_rate_watts = heat_release_rate_mw * 1e6
             fb = 8.79e-6 * heat_release_rate_watts
             fm = 0.1 * fb
@@ -206,11 +205,7 @@ class DispersionEngine:
             delta_h = 2.6 * ((fb / (u * s)) ** (1.0 / 3.0))
 
         # Clamp realistic physical limits
-        max_rise = (
-            180.0
-            if source_type == EmissionSourceType.INDUSTRIAL_STACK_EMISSION
-            else 95.0
-        )
+        max_rise = 180.0 if source_type == EmissionSourceType.INDUSTRIAL_STACK_EMISSION else 95.0
         delta_h_clamped = float(np.clip(delta_h, 0.0, max_rise))
 
         return delta_h_clamped, round(fb, 2), round(fm, 2)
@@ -291,9 +286,7 @@ class DispersionEngine:
 
         # Uniform mixing approximation: 1 / (zi * sqrt(2 * pi)) * (sqrt(2*pi) * sig_z) = sig_z / zi
         if np.any(uniform_mask):
-            vert_term[uniform_mask] = (
-                math.sqrt(2.0 * math.pi) * sig_z[uniform_mask]
-            ) / zi
+            vert_term[uniform_mask] = (math.sqrt(2.0 * math.pi) * sig_z[uniform_mask]) / zi
 
         if np.any(non_uniform_mask):
             sz = sig_z[non_uniform_mask]
@@ -304,9 +297,7 @@ class DispersionEngine:
             for n in (-2, -1, 0, 1, 2):
                 h1 = z - h + 2.0 * n * zi
                 h2 = z + h + 2.0 * n * zi
-                sum_images += np.exp(-(h1**2) / (2.0 * sz_sq)) + np.exp(
-                    -(h2**2) / (2.0 * sz_sq)
-                )
+                sum_images += np.exp(-(h1**2) / (2.0 * sz_sq)) + np.exp(-(h2**2) / (2.0 * sz_sq))
 
             vert_term[non_uniform_mask] = sum_images
 
@@ -329,9 +320,7 @@ class DispersionEngine:
         C = [Q / (2 * pi * u * sig_y * sig_z)] * exp(-y² / (2 * sig_y²)) * V(z, H, sig_z, PBL) * 1e6
         """
         sig_y, sig_z = self.evaluate_dispersion_coefficients(x_m, stability, terrain)
-        vert_term = self.evaluate_vertical_reflection(
-            z_recept_m, h_eff_m, sig_z, pbl_height_m
-        )
+        vert_term = self.evaluate_vertical_reflection(z_recept_m, h_eff_m, sig_z, pbl_height_m)
 
         lateral_term = np.exp(-(y_m**2) / (2.0 * (sig_y**2)))
         denom = 2.0 * math.pi * u_eff_ms * sig_y * sig_z
@@ -363,9 +352,7 @@ class DispersionEngine:
         d_east = x_m * math.sin(bearing_rad) + y_m * math.sin(cross_bearing_rad)
 
         delta_lat = math.degrees(d_north / self.earth_radius_m)
-        delta_lon = math.degrees(
-            d_east / (self.earth_radius_m * math.cos(math.radians(lat0)))
-        )
+        delta_lon = math.degrees(d_east / (self.earth_radius_m * math.cos(math.radians(lat0))))
 
         return GeoPoint(
             lat=round(lat0 + delta_lat, 6),
@@ -447,16 +434,12 @@ class DispersionEngine:
             # Calculate metric area using Shoelace formula
             x_pts = np.array([p[0] for p in contour_cartesian])
             y_pts = np.array([p[1] for p in contour_cartesian])
-            area_sq_m = 0.5 * np.abs(
-                np.dot(x_pts, np.roll(y_pts, 1)) - np.dot(y_pts, np.roll(x_pts, 1))
-            )
+            area_sq_m = 0.5 * np.abs(np.dot(x_pts, np.roll(y_pts, 1)) - np.dot(y_pts, np.roll(x_pts, 1)))
             area_sq_km = round(float(area_sq_m) / 1e6, 4)
 
             # Project to geographic coordinates (WGS84)
             geo_vertices: List[GeoPoint] = [
-                self.project_geodesic(
-                    origin_lat, origin_lon, downwind_bearing_deg, cx, cy
-                )
+                self.project_geodesic(origin_lat, origin_lon, downwind_bearing_deg, cx, cy)
                 for cx, cy in contour_cartesian
             ]
 
@@ -504,9 +487,7 @@ class DispersionEngine:
         valid_ages = ages[valid]
         x_centers = u_eff_ms * valid_ages
 
-        sig_y_arr, sig_z_arr = self.evaluate_dispersion_coefficients(
-            x_centers, stability, terrain
-        )
+        sig_y_arr, sig_z_arr = self.evaluate_dispersion_coefficients(x_centers, stability, terrain)
 
         vol = ((2.0 * math.pi) ** 1.5) * (sig_y_arr**2) * sig_z_arr
         peak_concentrations = (mass_per_puff_g / vol) * 1e6
@@ -523,9 +504,7 @@ class DispersionEngine:
             active_cnt = int(m_sec / dt)
 
             # Generate envelope at this timestamp
-            sig_arr, _ = self.evaluate_dispersion_coefficients(
-                np.array([leading_edge_m]), stability, terrain
-            )
+            sig_arr, _ = self.evaluate_dispersion_coefficients(np.array([leading_edge_m]), stability, terrain)
             front_width_m = float(sig_arr[0]) * 2.15
 
             envelope = [
@@ -583,9 +562,7 @@ class DispersionEngine:
             p_sy = float(sig_y_arr[idx])
             p_sz = float(sig_z_arr[idx])
             p_conc = float(peak_concentrations[idx])
-            center_geo = self.project_geodesic(
-                origin_lat, origin_lon, downwind_bearing_deg, p_x, 0.0
-            )
+            center_geo = self.project_geodesic(origin_lat, origin_lon, downwind_bearing_deg, p_x, 0.0)
             puff_samples.append(
                 PuffSnapshot(
                     puff_id=p_idx,
@@ -617,13 +594,9 @@ class DispersionEngine:
         if isopleths:
             # Pick broadest contour (usually ADVISORY or MODERATE)
             broadest = isopleths[-1]
-            coords = [
-                {"lat": pt.lat, "lon": pt.lon} for pt in broadest.boundary_polygon
-            ]
+            coords = [{"lat": pt.lat, "lon": pt.lon} for pt in broadest.boundary_polygon]
             reach_km = broadest.max_downwind_reach_km
-            half_spread_rad = math.atan2(
-                broadest.max_lateral_width_m / 2.0, max(100.0, reach_km * 1000.0)
-            )
+            half_spread_rad = math.atan2(broadest.max_lateral_width_m / 2.0, max(100.0, reach_km * 1000.0))
             spread_deg = round(math.degrees(half_spread_rad) * 2.0, 1)
         else:
             # Fallback envelope
@@ -638,9 +611,7 @@ class DispersionEngine:
                 reach_m,
                 0.0,
             )
-            p_center = self.project_geodesic(
-                origin_lat, origin_lon, downwind_bearing_deg, reach_m, 0.0
-            )
+            p_center = self.project_geodesic(origin_lat, origin_lon, downwind_bearing_deg, reach_m, 0.0)
             p_right = self.project_geodesic(
                 origin_lat,
                 origin_lon,
@@ -873,12 +844,8 @@ class DispersionEngine:
 
             # Rotate into downwind reference frame
             # Vector along downwind: (sin(bearing), cos(bearing))
-            x_downwind = east_m * math.sin(bearing_rad) + north_m * math.cos(
-                bearing_rad
-            )
-            y_crosswind = east_m * math.cos(bearing_rad) - north_m * math.sin(
-                bearing_rad
-            )
+            x_downwind = east_m * math.sin(bearing_rad) + north_m * math.cos(bearing_rad)
+            y_crosswind = east_m * math.cos(bearing_rad) - north_m * math.sin(bearing_rad)
 
             # Skip receptors upwind (x <= 10m) or beyond maximum plume reach
             if x_downwind < 10.0 or x_downwind > (max_reach_m * 1.25):
@@ -929,9 +896,7 @@ class DispersionEngine:
                     estimated_arrival_minutes=arrival_mins,
                     modeled_concentration_ug_m3=round(c_rec, 2),
                     hazard_level=tier,
-                    vulnerable_population_estimate=rec.get(
-                        "vulnerable_population_estimate", 250
-                    ),
+                    vulnerable_population_estimate=rec.get("vulnerable_population_estimate", 250),
                 )
             )
 

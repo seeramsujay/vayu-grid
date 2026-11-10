@@ -9,17 +9,14 @@ import logging
 import re
 import warnings
 from io import BytesIO
-from typing import Optional, Union, Dict, Any
+from typing import Any, Dict, Optional, Union
 
 from PIL import Image
 
 from app.core.config import settings
-from app.core.prompts import (
-    GEMINI_FORENSIC_SYSTEM_PROMPT,
-    build_audit_prompt_with_context
-)
-from app.models.forensic import ForensicAuditResult, PollutionSourceEnum, PriorityLevelEnum, RecommendedULBAction
-from app.data.sample_audit_payloads import get_sample_by_city, SPOOFING_REJECTION_FIXTURES
+from app.core.prompts import GEMINI_FORENSIC_SYSTEM_PROMPT, build_audit_prompt_with_context
+from app.data.sample_audit_payloads import get_sample_by_city
+from app.models.forensic import ForensicAuditResult, RecommendedULBAction
 
 logger = logging.getLogger("vayugrid.gemini_forensic")
 logger.setLevel(logging.INFO)
@@ -30,7 +27,8 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="google.generat
 # Attempt to import google.generativeai; handle gracefully if not installed yet
 try:
     import google.generativeai as genai
-    from google.generativeai.types import HarmCategory, HarmBlockThreshold
+    from google.generativeai.types import HarmBlockThreshold, HarmCategory
+
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
@@ -63,8 +61,8 @@ class GeminiForensicService:
                         generation_config={
                             "temperature": settings.GEMINI_TEMPERATURE,
                             "top_p": 0.95,
-                            "response_mime_type": "application/json"
-                        }
+                            "response_mime_type": "application/json",
+                        },
                     )
                     self._is_initialized = True
                     self.model_name = cand
@@ -84,7 +82,7 @@ class GeminiForensicService:
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         city_hint: Optional[str] = None,
-        reported_by: Optional[str] = None
+        reported_by: Optional[str] = None,
     ) -> ForensicAuditResult:
         """
         Performs a full forensic audit on an uploaded pollution photograph.
@@ -104,10 +102,7 @@ class GeminiForensicService:
 
         # 2. Build audit context prompt
         context_prompt = build_audit_prompt_with_context(
-            latitude=latitude,
-            longitude=longitude,
-            city_hint=city_hint,
-            reported_by=reported_by
+            latitude=latitude, longitude=longitude, city_hint=city_hint, reported_by=reported_by
         )
 
         # 3. If Gemini is available and configured, execute live multimodal inference
@@ -122,10 +117,7 @@ class GeminiForensicService:
 
         # 4. Fallback: Context-aware heuristic mock evaluation (ensures zero hackathon downtime)
         return self._generate_resilient_fallback(
-            pil_image=pil_image,
-            city_hint=city_hint,
-            latitude=latitude,
-            longitude=longitude
+            pil_image=pil_image, city_hint=city_hint, latitude=latitude, longitude=longitude
         )
 
     def _call_gemini_live(self, pil_image: Image.Image, context_prompt: str) -> ForensicAuditResult:
@@ -157,13 +149,10 @@ class GeminiForensicService:
                     generation_config={
                         "temperature": settings.GEMINI_TEMPERATURE,
                         "top_p": 0.95,
-                        "response_mime_type": "application/json"
-                    }
+                        "response_mime_type": "application/json",
+                    },
                 )
-                response = model.generate_content(
-                    [context_prompt, pil_image],
-                    safety_settings=safety_settings
-                )
+                response = model.generate_content([context_prompt, pil_image], safety_settings=safety_settings)
                 if response and response.text:
                     parsed_dict = self._parse_json_response(response.text.strip())
                     logger.info(f"Gemini live audit succeeded with model: {model_id}")
@@ -171,7 +160,12 @@ class GeminiForensicService:
             except Exception as exc:
                 last_error = exc
                 err_str = str(exc)
-                if "429" in err_str or "quota" in err_str.lower() or "not found" in err_str.lower() or "no longer available" in err_str.lower():
+                if (
+                    "429" in err_str
+                    or "quota" in err_str.lower()
+                    or "not found" in err_str.lower()
+                    or "no longer available" in err_str.lower()
+                ):
                     logger.warning(f"Model {model_id} hit limit ({err_str[:60]}...). Cascading to next candidate...")
                     continue
                 else:
@@ -189,7 +183,7 @@ class GeminiForensicService:
         start_idx = clean_text.find("{")
         end_idx = clean_text.rfind("}")
         if start_idx != -1 and end_idx != -1:
-            clean_text = clean_text[start_idx:end_idx + 1]
+            clean_text = clean_text[start_idx : end_idx + 1]
 
         return json.loads(clean_text)
 
@@ -204,6 +198,7 @@ class GeminiForensicService:
         if isinstance(image_data, str):
             # Check if base64 string
             import base64
+
             if "," in image_data:
                 image_data = image_data.split(",", 1)[1]
             decoded = base64.b64decode(image_data)
@@ -216,7 +211,7 @@ class GeminiForensicService:
         pil_image: Optional[Image.Image],
         city_hint: Optional[str],
         latitude: Optional[float],
-        longitude: Optional[float]
+        longitude: Optional[float],
     ) -> ForensicAuditResult:
         """
         Produces a high-fidelity statutory evaluation when Gemini API is not accessible.
@@ -249,7 +244,7 @@ class GeminiForensicService:
                         estimated_plume_spread_radius_meters=0,
                         detected_visual_markers=[],
                         recommended_ulb_action=None,
-                        summary_assessment="Preliminary optical analysis detected clean ambient atmospheric conditions. No intervention required."
+                        summary_assessment="Preliminary optical analysis detected clean ambient atmospheric conditions. No intervention required.",
                     )
 
                 # 2. Indoor / Screen anti-spoofing rejection
@@ -264,7 +259,7 @@ class GeminiForensicService:
                         estimated_plume_spread_radius_meters=0,
                         detected_visual_markers=[],
                         recommended_ulb_action=None,
-                        summary_assessment="Rejected by anti-spoofing heuristic: non-outdoor scene."
+                        summary_assessment="Rejected by anti-spoofing heuristic: non-outdoor scene.",
                     )
 
                 # 3. Construction / Demolition dust (warm sandy mineral tones)
@@ -280,14 +275,14 @@ class GeminiForensicService:
                         detected_visual_markers=[
                             "Dense mineral and masonry dust suspension along roadway",
                             "Excavation and unmitigated earthworks boundary breach",
-                            "Visible particulate dispersion towards pedestrian corridor"
+                            "Visible particulate dispersion towards pedestrian corridor",
                         ],
                         recommended_ulb_action=RecommendedULBAction(
                             intervention_type="Deploy Water Sprinkler Tanker and Issue Stop-Work Notice",
                             target_department="Municipal Construction Dust Cell / ULB",
-                            priority_level="HIGH"
+                            priority_level="HIGH",
                         ),
-                        summary_assessment="Active construction and demolition dust suspension without statutory water misting barriers."
+                        summary_assessment="Active construction and demolition dust suspension without statutory water misting barriers.",
                     )
             except Exception as e:
                 logger.warning(f"Fallback image metric extraction failed: {e}")
@@ -322,7 +317,7 @@ class GeminiForensicService:
             estimated_plume_spread_radius_meters=verif["estimated_plume_spread_radius_meters"],
             detected_visual_markers=verif["detected_visual_markers"],
             recommended_ulb_action=RecommendedULBAction(**verif["recommended_ulb_action"]),
-            summary_assessment=verif.get("summary_assessment")
+            summary_assessment=verif.get("summary_assessment"),
         )
 
 

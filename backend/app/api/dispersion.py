@@ -5,15 +5,16 @@ generating statutory isopleths, and calculating sensitive receptor exposure.
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, Body
 
+from fastapi import APIRouter, Body, HTTPException, Query
+
+from app.data.sensitive_infrastructure import get_candidate_receptors
 from app.models.dispersion import (
-    SimulationParameters,
     DispersionSimulationResult,
+    SimulationParameters,
 )
 from app.services.dispersion_engine import DispersionEngine
 from app.services.weather_service import WeatherService
-from app.data.sensitive_infrastructure import get_candidate_receptors
 
 router = APIRouter(prefix="/dispersion", tags=["Atmospheric Physics & Dispersion Engine"])
 

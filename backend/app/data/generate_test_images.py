@@ -10,6 +10,7 @@ Generates synthetic benchmark test images for:
 """
 
 import os
+
 from PIL import Image, ImageDraw, ImageFilter
 
 
@@ -125,7 +126,7 @@ def create_test_images(output_dir: str = None, force_regenerate: bool = False):
         "clean_road": clean_path,
         "indoor_room": indoor_path,
         "industrial_stack": ind_path,
-        "stubble_burning": stubble_path
+        "stubble_burning": stubble_path,
     }
 
 
