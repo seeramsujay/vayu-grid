@@ -2,14 +2,13 @@
 
 import numpy as np
 import pytest
-
-from app.services.dispersion_engine import DispersionEngine
-from app.models.weather import StabilityClass, TerrainCategory, WeatherTelemetry
 from app.models.dispersion import (
     EmissionSourceType,
     HazardLevel,
     SimulationParameters,
 )
+from app.models.weather import StabilityClass, TerrainCategory, WeatherTelemetry
+from app.services.dispersion_engine import DispersionEngine
 
 
 @pytest.fixture

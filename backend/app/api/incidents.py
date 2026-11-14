@@ -9,31 +9,32 @@ Orchestrates:
 """
 
 import logging
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Query, Body, status
+from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, Body, File, Form, HTTPException, Query, UploadFile, status
+
+from app.data.sensitive_infrastructure import get_candidate_receptors
 from app.models.dispersion import (
     EmissionSourceType,
     SimulationParameters,
 )
 from app.models.incident import (
-    IncidentStatusEnum,
+    Base64AuditRequest,
     CoordinatesModel,
+    IncidentRecord,
+    IncidentStatusEnum,
     IncidentVerificationDetails,
     MeteorologySummary,
     MunicipalActionRequest,
     MunicipalActionResponse,
     ResolveIncidentRequest,
     ResolveIncidentResponse,
-    Base64AuditRequest,
-    IncidentRecord,
 )
-from app.services.ticket_service import ticket_service
 from app.services.dispersion_engine import DispersionEngine
-from app.services.weather_service import WeatherService
 from app.services.gemini_forensic import GeminiForensicService
+from app.services.ticket_service import ticket_service
 from app.services.vernacular_service import VernacularService
-from app.data.sensitive_infrastructure import get_candidate_receptors
+from app.services.weather_service import WeatherService
 
 logger = logging.getLogger("vayugrid.incidents")
 
@@ -338,6 +339,7 @@ async def audit_incident_json(payload: Base64AuditRequest = Body(...)):
 
     if payload.image_base64:
         import base64
+
         raw_b64 = payload.image_base64
         if "," in raw_b64:
             header, raw_b64 = raw_b64.split(",", 1)
@@ -387,7 +389,9 @@ async def audit_incident_json(payload: Base64AuditRequest = Body(...)):
 )
 async def get_active_incidents(
     city_id: Optional[str] = Query(None, description="Optional city filter (e.g. 'delhi_ncr')"),
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (e.g. 'VERIFIED_HAZARD', 'DISPATCHED')"),
+    status_filter: Optional[str] = Query(
+        None, alias="status", description="Filter by status (e.g. 'VERIFIED_HAZARD', 'DISPATCHED')"
+    ),
     priority: Optional[str] = Query(None, description="Filter by priority ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW')"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),

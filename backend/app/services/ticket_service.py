@@ -5,25 +5,25 @@ strict lifecycle state machine transitions, and pre-seeded demonstration data
 for Indian regional archetypes (Delhi-NCR, Bengaluru, Kanpur, Mumbai, Punjab).
 """
 
-import uuid
 import json
-import sqlite3
 import logging
+import sqlite3
 import threading
+import uuid
 from datetime import datetime, timezone
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 from app.models.incident import (
-    IncidentStatusEnum,
     VALID_STATE_TRANSITIONS,
     CoordinatesModel,
+    IncidentRecord,
+    IncidentStatusEnum,
     IncidentVerificationDetails,
     MeteorologySummary,
     MunicipalActionRequest,
     MunicipalActionResponse,
     ResolveIncidentRequest,
     ResolveIncidentResponse,
-    IncidentRecord,
 )
 
 logger = logging.getLogger("vayugrid.ticket_service")
@@ -52,8 +52,7 @@ class TicketService:
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    """
+                cursor.execute("""
                     CREATE TABLE IF NOT EXISTS incidents (
                         ticket_id TEXT PRIMARY KEY,
                         status TEXT NOT NULL,
@@ -62,8 +61,7 @@ class TicketService:
                         updated_at TEXT NOT NULL,
                         data_json TEXT NOT NULL
                     );
-                    """
-                )
+                    """)
                 cursor.execute("SELECT data_json FROM incidents;")
                 rows = cursor.fetchall()
                 for (data_json,) in rows:
@@ -163,8 +161,10 @@ class TicketService:
                 "delhi_ncr": "delhi",
             }
             results = [
-                inc for inc in results
-                if inc.city_id and (
+                inc
+                for inc in results
+                if inc.city_id
+                and (
                     inc.city_id.lower().replace("-", "_") == target_city
                     or inc.city_id.lower().replace("-", "_") == alias_map.get(target_city, "")
                 )
@@ -172,10 +172,7 @@ class TicketService:
 
         if status:
             target_status = status.upper()
-            results = [
-                inc for inc in results
-                if inc.status.value == target_status or inc.status == target_status
-            ]
+            results = [inc for inc in results if inc.status.value == target_status or inc.status == target_status]
 
         if priority:
             target_prio = priority.upper()
@@ -278,9 +275,7 @@ class TicketService:
 
             incident = self._store[ticket_id]
             if incident.status not in [IncidentStatusEnum.VERIFIED_HAZARD, IncidentStatusEnum.DISPATCHED]:
-                raise ValueError(
-                    f"Cannot resolve ticket {ticket_id} from current status {incident.status.value}."
-                )
+                raise ValueError(f"Cannot resolve ticket {ticket_id} from current status {incident.status.value}.")
 
             now_iso = datetime.now(timezone.utc).isoformat()
             incident.status = IncidentStatusEnum.RESOLVED

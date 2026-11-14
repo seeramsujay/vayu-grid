@@ -5,7 +5,8 @@ fallbacks and statutory Indian National Air Quality Index (NAQI) category mappin
 """
 
 import logging
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
+
 import httpx
 from pydantic import BaseModel
 
@@ -16,6 +17,7 @@ logger = logging.getLogger("vayugrid.aqi_service")
 
 class StationTelemetry(BaseModel):
     """Real-time monitoring telemetry from a ground-truth ambient station."""
+
     station_id: str
     station_name: str
     city_id: str

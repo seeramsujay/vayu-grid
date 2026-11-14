@@ -13,13 +13,13 @@ Verifies:
 """
 
 import math
+
 import numpy as np
 import pytest
-
+from app.models.dispersion import EmissionSourceType, SimulationParameters
+from app.models.weather import StabilityClass, TerrainCategory, WeatherTelemetry
 from app.services.dispersion_engine import DispersionEngine
 from app.services.weather_service import WeatherService
-from app.models.weather import StabilityClass, TerrainCategory, WeatherTelemetry
-from app.models.dispersion import EmissionSourceType, SimulationParameters
 
 
 @pytest.fixture
@@ -235,9 +235,9 @@ def test_pbl_inversion_trapping_enhancement(engine):
 
     # Inversion trapping must concentrate ground level smoke downwind
     assert c_trapped > c_unconfined
-    assert c_trapped > c_unconfined * 1.25, (
-        f"Inversion lid ({c_trapped:.1f}) should amplify far-downwind ground concentration over unconfined ({c_unconfined:.1f})"
-    )
+    assert (
+        c_trapped > c_unconfined * 1.25
+    ), f"Inversion lid ({c_trapped:.1f}) should amplify far-downwind ground concentration over unconfined ({c_unconfined:.1f})"
 
 
 # =============================================================================
@@ -432,9 +432,9 @@ def test_isopleth_boundary_concentration_exactness(engine):
         # Apex concentration must be closely matching the threshold
         # (discretization on downwind grid is within 15%)
         rel_diff = abs(c_apex - threshold) / threshold
-        assert rel_diff < 0.15, (
-            f"Isopleth {isopleth.tier} apex concentration {c_apex:.1f} differs from threshold {threshold} by {rel_diff:.2%}"
-        )
+        assert (
+            rel_diff < 0.15
+        ), f"Isopleth {isopleth.tier} apex concentration {c_apex:.1f} differs from threshold {threshold} by {rel_diff:.2%}"
 
 
 # =============================================================================

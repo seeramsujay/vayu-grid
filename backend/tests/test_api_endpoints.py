@@ -1,7 +1,7 @@
 """Integration tests for FastAPI endpoints."""
 
-from starlette.testclient import TestClient
 from app.main import app
+from starlette.testclient import TestClient
 
 client = TestClient(app)
 
@@ -184,5 +184,3 @@ def test_vernacular_endpoints():
     aud = res_aud.json()
     assert aud["language_code"] == "hi"
     assert "audio_base64" in aud or aud.get("audio_source") == "SYNTHESIZED_FALLBACK"
-
-

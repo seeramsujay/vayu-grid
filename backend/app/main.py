@@ -4,17 +4,18 @@ FastAPI application with atmospheric dispersion physics, micrometeorological tel
 and incident dispatch routing.
 """
 
+import logging
 import time
 import uuid
-import logging
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.telemetry import router as telemetry_router
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from app.api.dispersion import router as dispersion_router
-from app.api.incidents import router as incidents_router
 from app.api.endpoints.vernacular import router as vernacular_router
+from app.api.incidents import router as incidents_router
+from app.api.telemetry import router as telemetry_router
 
 logger = logging.getLogger("vayugrid.main")
 
@@ -101,4 +102,3 @@ async def health_check():
             "aqi_service": "operational",
         },
     }
-

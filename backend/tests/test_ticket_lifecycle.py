@@ -11,12 +11,12 @@ Validates:
 
 import pytest
 from app.models.incident import (
-    IncidentStatusEnum,
     CoordinatesModel,
+    IncidentRecord,
+    IncidentStatusEnum,
     IncidentVerificationDetails,
     MunicipalActionRequest,
     ResolveIncidentRequest,
-    IncidentRecord,
 )
 from app.services.ticket_service import TicketService
 
@@ -251,4 +251,3 @@ def test_sqlite_persistence_roundtrip(tmp_path):
     assert reloaded.ticket_id == custom_ticket_id
     assert reloaded.status == IncidentStatusEnum.VERIFIED_HAZARD
     assert reloaded.reported_by == "OFFLINE_INSPECTOR"
-

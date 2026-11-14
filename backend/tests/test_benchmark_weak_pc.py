@@ -4,12 +4,12 @@ Ensures execution latency is well under 50ms per full end-to-end simulation.
 """
 
 import time
-import numpy as np
 
+import numpy as np
+from app.data.sensitive_infrastructure import SENSITIVE_RECEPTORS
+from app.models.dispersion import EmissionSourceType, SimulationParameters
 from app.services.dispersion_engine import DispersionEngine
 from app.services.weather_service import WeatherService
-from app.models.dispersion import EmissionSourceType, SimulationParameters
-from app.data.sensitive_infrastructure import SENSITIVE_RECEPTORS
 
 
 def test_weak_pc_simulation_latency():

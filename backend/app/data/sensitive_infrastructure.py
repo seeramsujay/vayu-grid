@@ -6,7 +6,7 @@ Delhi-NCR, Bengaluru, Kanpur, Mumbai, and the Punjab Agrarian Belt.
 """
 
 import math
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 SENSITIVE_RECEPTORS: List[Dict[str, Any]] = [
     # =========================================================================
@@ -214,10 +214,7 @@ def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) ->
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
 
-    a = (
-        math.sin(dphi / 2.0) ** 2
-        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2.0) ** 2
-    )
+    a = math.sin(dphi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2.0) ** 2
     c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
     return r * c
 

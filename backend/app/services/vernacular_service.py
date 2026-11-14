@@ -9,18 +9,12 @@ import base64
 import json
 import logging
 import re
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 from app.core.config import settings
-from app.core.prompts import (
-    VERNACULAR_TRANSLATION_SYSTEM_PROMPT,
-    build_vernacular_prompt
-)
-from app.models.forensic import (
-    VernacularAdvisories,
-    VernacularAudioResponse
-)
+from app.core.prompts import VERNACULAR_TRANSLATION_SYSTEM_PROMPT, build_vernacular_prompt
 from app.data.sample_audit_payloads import SAMPLE_AUDIT_PAYLOADS
+from app.models.forensic import VernacularAdvisories, VernacularAudioResponse
 
 logger = logging.getLogger("vayugrid.vernacular_service")
 logger.setLevel(logging.INFO)
@@ -28,6 +22,7 @@ logger.setLevel(logging.INFO)
 # Check for Google Cloud Text-to-Speech SDK
 try:
     from google.cloud import texttospeech
+
     HAS_GCP_TTS = True
 except ImportError:
     HAS_GCP_TTS = False
@@ -36,6 +31,7 @@ except ImportError:
 # Check for google-generativeai SDK
 try:
     import google.generativeai as genai
+
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
@@ -71,11 +67,7 @@ class VernacularService:
                     self._genai_model = genai.GenerativeModel(
                         model_name=cand,
                         system_instruction=VERNACULAR_TRANSLATION_SYSTEM_PROMPT,
-                        generation_config={
-                            "temperature": 0.2,
-                            "top_p": 0.9,
-                            "response_mime_type": "application/json"
-                        }
+                        generation_config={"temperature": 0.2, "top_p": 0.9, "response_mime_type": "application/json"},
                     )
                     break
                 except Exception as e:
@@ -94,7 +86,7 @@ class VernacularService:
         source_classification: str,
         severity_score: float,
         city_name: str = "Delhi-NCR",
-        detected_markers: Optional[list] = None
+        detected_markers: Optional[list] = None,
     ) -> VernacularAdvisories:
         """
         Synthesizes localized public health advisories across all 6 Indian languages.
@@ -106,7 +98,7 @@ class VernacularService:
                     source_classification=source_classification,
                     severity_score=severity_score,
                     city_name=city_name,
-                    detected_markers=detected_markers
+                    detected_markers=detected_markers,
                 )
                 response = self._genai_model.generate_content(prompt)
                 if response and response.text:
@@ -118,11 +110,7 @@ class VernacularService:
         # Fallback to pre-compiled high-quality curated advisories
         return self._get_fallback_advisories(source_classification)
 
-    def synthesize_speech(
-        self,
-        text: str,
-        language_code: str
-    ) -> VernacularAudioResponse:
+    def synthesize_speech(self, text: str, language_code: str) -> VernacularAudioResponse:
         """
         Synthesizes audio for a single advisory text string.
         Uses Google Cloud TTS if available, else returns metadata for browser Web Speech synthesis.
@@ -137,18 +125,15 @@ class VernacularService:
                 voice_cfg = VOICE_MAPPING[lang]
                 synthesis_input = texttospeech.SynthesisInput(text=text)
                 voice = texttospeech.VoiceSelectionParams(
-                    language_code=voice_cfg["language_code"],
-                    name=voice_cfg["name"]
+                    language_code=voice_cfg["language_code"], name=voice_cfg["name"]
                 )
                 audio_config = texttospeech.AudioConfig(
                     audio_encoding=texttospeech.AudioEncoding.MP3,
-                    speaking_rate=0.95  # Slightly slower for urgent advisory clarity
+                    speaking_rate=0.95,  # Slightly slower for urgent advisory clarity
                 )
 
                 response = self._tts_client.synthesize_speech(
-                    input=synthesis_input,
-                    voice=voice,
-                    audio_config=audio_config
+                    input=synthesis_input, voice=voice, audio_config=audio_config
                 )
 
                 b64_audio = base64.b64encode(response.audio_content).decode("utf-8")
@@ -157,18 +142,14 @@ class VernacularService:
                     text=text,
                     audio_base64=f"data:audio/mp3;base64,{b64_audio}",
                     audio_format="audio/mp3",
-                    is_fallback=False
+                    is_fallback=False,
                 )
             except Exception as e:
                 logger.warning(f"Cloud TTS synthesis failed: {e}. Returning client-side fallback.")
 
         # Client-side Web Speech fallback
         return VernacularAudioResponse(
-            language_code=lang,
-            text=text,
-            audio_base64=None,
-            audio_format="web-speech-api",
-            is_fallback=True
+            language_code=lang, text=text, audio_base64=None, audio_format="web-speech-api", is_fallback=True
         )
 
     def _get_fallback_advisories(self, source_classification: str) -> VernacularAdvisories:
@@ -188,7 +169,7 @@ class VernacularService:
         start = clean.find("{")
         end = clean.rfind("}")
         if start != -1 and end != -1:
-            clean = clean[start:end + 1]
+            clean = clean[start : end + 1]
         return json.loads(clean)
 
 
