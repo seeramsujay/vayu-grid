@@ -1,3 +1,20 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="vayu-grid Logo" width="120" height="120" />
+</p>
+
+<h1 align="center">vayu-grid</h1>
+
+<p align="center">
+  <em>Real-time industrial air pollution forensic dispersion & mitigation platform</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Maintained-success?style=flat-square" alt="Status" />
+  <img src="https://img.shields.io/badge/License-Protected-blue?style=flat-square" alt="License" />
+</p>
+
+---
+
 <div align="center">
 
 # 🌬️ VayuGrid (वायुग्रिड)
